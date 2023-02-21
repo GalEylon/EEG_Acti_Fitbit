@@ -1,30 +1,35 @@
 function AccuracyBarArticleAnova(DataTable,varS,varplot, Sensors, pval)
 
-ACC.SensitivitySleep = @(x) x(1,1)/sum(x(1,:));
-ACC.SensitivityWake = @(x) x(2,2)/sum(x(2,:));
-ACC.PPVSleep = @(x) x(1,1)/sum(x(:,1));
-ACC.PPVWake = @(x) x(2,2)/sum(x(:,2));
+% calculate sensitivity, specificity, PPV and NPV for all nights
+sensitivity = DataTable.TP./(DataTable.TP+DataTable.FN);
+specificity = DataTable.TN./(DataTable.TN+DataTable.FP);
+PPV = DataTable.TP./(DataTable.TP+DataTable.FP);
+NPV = DataTable.TN./(DataTable.TN+DataTable.FN);
 
+%seperate values by sensor (sensitivity_wake = specificity, PPV_wake = NPV)
 for i = 1:length(Sensors)
-    AC.Sensitivity_Sleep(:,i) = cellfun(ACC.SensitivitySleep, DataTable.ConfMatAll(DataTable.Sensor == Sensors{i}));
-    AC.PPV_Sleep(:,i) = cellfun(ACC.PPVSleep, DataTable.ConfMatAll(DataTable.Sensor == Sensors{i}));
-    AC.Sensitivity_Wake(:,i) = cellfun(ACC.SensitivityWake, DataTable.ConfMatAll(DataTable.Sensor == Sensors{i}));
-    AC.PPV_Wake(:,i) = cellfun(ACC.PPVWake, DataTable.ConfMatAll(DataTable.Sensor == Sensors{i}));
+    AC.Sensitivity_Sleep(:,i) = sensitivity(DataTable.Sensor == Sensors{i});
+    AC.PPV_Sleep(:,i) = PPV(DataTable.Sensor == Sensors{i});
+    AC.Sensitivity_Wake(:,i) = specificity(DataTable.Sensor == Sensors{i});
+    AC.PPV_Wake(:,i) = NPV(DataTable.Sensor == Sensors{i});
 end
-%%
+
+%get participants ID and groupby
 names = DataTable.Name(DataTable.Sensor=='FB',:);
 [G,ID] = findgroups(cellstr(names));
-% g = findgroups(cellstr(DataTable.Name(DataTable.Sensor == Sensors{i})))
-% a = splitapply(@mean,AC.Sensitivity_Sleep,G);
+
+%replace missing npv values (where the sensor didn't detect any wake) with
+%0.
 AC.PPV_Wake = fillmissing(AC.PPV_Wake,'constant',0);
 
-AC.Sensitivity_Sleep = splitapply(@mean,AC.Sensitivity_Sleep,G);
+%calculate mean value for each subject
+AC.Sensitivity_Sleep= splitapply(@mean,AC.Sensitivity_Sleep,G);
 AC.PPV_Sleep = splitapply(@mean,AC.PPV_Sleep,G);
 AC.Sensitivity_Wake = splitapply(@mean,AC.Sensitivity_Wake,G);
 AC.PPV_Wake = splitapply(@mean,AC.PPV_Wake,G);
 
 
-%%
+%% plot
 Mainfig = figure('Units','normalized','Position',[.1 .2 .6 .6]);
 t = tiledlayout(Mainfig, 1,2,'TileSpacing','tight');
 
@@ -34,27 +39,28 @@ for st = 1:numel(varplot)
     % get sen and ppv for current state (sleep/wake)
     SEN = AC.(curfields{contains(curfields,'Sensitivity')});
     PPV = AC.(curfields{contains(curfields,'PPV')});
-    PPV = fillmissing(PPV,'constant',0);
 
-    % calculate mean and std
+    % calculate mean, sd and se, construct vector for plot
     MeanMat = [mean(SEN,'omitnan')',mean(PPV,'omitnan')'];
     SteMat = [std(SEN,'omitnan')'./sqrt(length(SEN)),...
         std(PPV,'omitnan')'./sqrt(sum(~any(isnan(PPV),2)))];
     StdMat = [std(SEN,'omitnan')',std(PPV,'omitnan')'];
 
-    %plot bar, sd and write values on top
+    %plot bar
     ax.(varplot{st}) = nexttile(t);
     b = bar( MeanMat',.92); hold on; box off;
+
+    %assign color
     b(1).FaceColor= [0.4941    0.1843    0.5569];
     b(2).FaceColor= [0    0.4471    0.7412];
     b(3).FaceColor= [0.8510    0.3255    0.0980];
+
+    %plot error bar
     errorbar(reshape([b.XEndPoints],2,3),MeanMat', SteMat',...
         'k','linestyle', 'none');
-%     xlabel(varplot{st});
     xticklabels(varS(st,:)); ylim([0 1.2])
     StdMat2 = reshape(StdMat',1,6);
     xvals = [b.XEndPoints];
-%     yvals = [b.YEndPoints] +StdMat2;
     yvals = [b.YEndPoints] +reshape(SteMat',1,6);
     yvalstxt = [b.YEndPoints];
     labels1 = string(arrayfun(@(x) sprintf("%0.2f ",yvalstxt(x)),1:6,'uni',0));

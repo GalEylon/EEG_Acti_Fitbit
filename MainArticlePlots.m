@@ -1,4 +1,7 @@
 %% Main Plots
+
+%load data file
+
 var = {'Sleep Time', 'Wake Time'};
 pTitle = {'Total Sleep Time (min)','Wake After Sleep Onset (min)'};
 varS = {'Sensitivity', 'PPV'; 'Specificity','NPV'};
