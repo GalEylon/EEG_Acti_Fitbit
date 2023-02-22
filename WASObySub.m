@@ -1,14 +1,17 @@
 function WASObySub(DataTable)
-%UNTITLED3 Summary of this function goes here
-%   Detailed explanation goes here
+% This function calculates and displays specificity and NPV values (mean and std)
+% for each subject seperated by device
+
+%specificity
 ACC.SensitivityWake = @(x) x(2,2)/sum(x(2,:));
+%NPV
 ACC.PPVWake = @(x) x(2,2)/sum(x(:,2));
 Sensors = {'FB','ACTI_CK','ACTI_S'};
 Sensors2 = {'FC3','Actigraph \n(Cole-Kripke)','Actigraph \n(Sadeh)'};
 names = DataTable.Name(DataTable.Sensor=='FB',:);
 names2 = DataTable.Name(DataTable.Sensor=='ACTI_CK',:);
 if ~all(all(names == names2))
-    disp('missmatch num rows')
+    disp('num rows missmatch ')
     return
 end
 
@@ -25,8 +28,6 @@ Means = [arrayfun(@(x) splitapply(@mean, Sen_W(:,x), G), 1:3,'UniformOutput',0),
     arrayfun(@(x) splitapply(@mean, PPV_W(:,x), G), 1:3,'UniformOutput',0)];
 Stds = [arrayfun(@(x) splitapply(@std, Sen_W(:,x), G), 1:3,'UniformOutput',0),...
     arrayfun(@(x) splitapply(@std, PPV_W(:,x), G), 1:3,'UniformOutput',0)];
-% Means = arrayfun(@(x) fillmissing(Means{1,x},'constant',0),1:6,'uni',0);
-% Stds = arrayfun(@(x) fillmissing(Stds{1,x},'constant',0),1:6,'uni',0);
 Stes = arrayfun(@(x) Stds{1,x}./sqrt(cnt_unique'), 1:6,'uni',0);
 
 numlabels = arrayfun(@(s) sprintf('%1.0f',s),cnt_unique,'UniformOutput',false);

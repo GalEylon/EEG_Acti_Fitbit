@@ -1,5 +1,5 @@
 function barplotsep(DataTable,BarVars,GroupVar)
-% this function creats bar chart with error bar fot TST or WASO 170622
+% Bar chart with error bar for TST or WASO seperated by sensor
 
 colors = [0 .44 .74; .02 .61 1;
     1 .4 .16; .96 .6 .4;
@@ -12,23 +12,15 @@ stdMat = splitapply(@std,DataTable.(BarVars),GroupVar)'...
 
 %fig = figure()
 b = bar(diag(TimeMat),'Stacked','FaceColor','flat'); hold on;
-% when had 6 columns 
-% for j = 1:length(TimeMat)
-%     b(j).CData =  colors(j,:);
-% end
 errorbar([1:length(TimeMat)],TimeMat, stdMat, 'k','linestyle', 'none')
-ylabel('Duration (minutes)'); %title('Time at Stage');
+ylabel('Duration (minutes)');
 set(gca,'Fontsize',14,'FontName','Times New Roman','XTickLabel',{[]},...
     'LineWidth',1,'box','off')
 figAx = gca;
 
-%% add mean and std text to bars
+%% add mean and ste text to bars
 xvals = [1:length(TimeMat)];
 yvals = TimeMat +stdMat;
-% labels = string([b.YData]);
-% labels = string(arrayfun(@(x) sprintf('%0.1f\n(%0.1f)',TimeMat(x),stdMat(x)),1:length(yvals),'uni',0));
-% text(figAx,xvals,yvals,labels,'HorizontalAlignment','center',...
-%     'VerticalAlignment','bottom','FontName','Times New Roman','FontSize',11.5);
 
 labels1 = string(arrayfun(@(x) sprintf("%0.1f ",TimeMat(x)),1:length(yvals),'uni',0));
 labels2 = string(arrayfun(@(x) sprintf("(%.1f)",stdMat(x)),1:length(yvals),'uni',0));
@@ -37,27 +29,7 @@ txt = text(figAx,xvals,yvals+.05*max(yvals),labels1,'HorizontalAlignment','cente
 txt = text(figAx,xvals,yvals,labels2,'HorizontalAlignment','center',...
     'VerticalAlignment','bottom','FontName','Times New Roman','FontSize',10);
 
-%% ANOVA
-[~,text_tbl,stats] = anova1(DataTable.(BarVars),...
-    strrep(convertStringsToChars(DataTable.Sensor),'_','\_'),'off');
-text_tbl
-%figure()
-[c,~,~,gnames] = multcompare(stats,Display="off");
-
-% find significant post hoc
-% xvals = reshape([b.XEndPoints],2,length(b));
-% sigTestInd = find(c(:,end)< .05);
-% yval = 2;
-% for i = 1:numel(sigTestInd)
-%     var1 = find(gnames(c(sigTestInd(i),1)) ==  strrep(DataTable.Sensor(GroupVar(1:4)),'_','\_'));
-%     var2 = find(gnames(c(sigTestInd(i),2)) ==  strrep(DataTable.Sensor(GroupVar(1:4)),'_','\_'));
-%     plot(figAx,xvals(2,[min([var1 var2]) max([var1 var2])]), [1 1]*TimeMat(2,4)*(1+yval), '-k', 'LineWidth',1.5);
-%     plot(figAx,[1 1]*xvals(2,min([var1 var2])),[TimeMat(2,4)*(1+yval) TimeMat(2,4)*(1+yval)-5],'-k', 'LineWidth',1.5)
-%     plot(figAx,[1 1]*xvals(2,max([var1 var2])),[TimeMat(2,4)*(1+yval) TimeMat(2,4)*(1+yval)-5],'-k', 'LineWidth',1.5)
-%     plot(figAx,mean(xvals(2,[min([var1 var2]) max([var1 var2])])), TimeMat(2,4)*(1+yval+0.2), '*k')
-%     yval = yval +0.5;
-% end
-%% ttest manually 170622
+%% ttest
 Sensors = DataTable.Sensor(1:length(TimeMat));
 for i = 1:length(Sensors)
     Sens(i) = Sensors(GroupVar(1:length(TimeMat)) == i);
@@ -90,12 +62,13 @@ forlgd(contains(forlgd,'EEG')) = {'PSG'};
 forlgd(contains(forlgd,'FB')) = {'FC3'};
 
 
-% if contains(BarVars, 'Sleep')
-%     title(figAx,'TST')
-% else
-%     title(figAx,'WASO')
-%     legend(figAx,forlgd,'Location','bestoutside');
-% end
+if contains(BarVars, 'Sleep')
+    title(figAx,'TST')
+else
+    title(figAx,'WASO')
+    lg = legend(figAx,forlgd);
+    lg.Layout.Tile = 'east'
+end
 
 end
 

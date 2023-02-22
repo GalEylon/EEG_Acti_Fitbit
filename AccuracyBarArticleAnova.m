@@ -1,17 +1,17 @@
 function AccuracyBarArticleAnova(DataTable,varS,varplot, Sensors, pval)
 
-% calculate sensitivity, specificity, PPV and NPV for all nights
-sensitivity = DataTable.TP./(DataTable.TP+DataTable.FN);
-specificity = DataTable.TN./(DataTable.TN+DataTable.FP);
-PPV = DataTable.TP./(DataTable.TP+DataTable.FP);
-NPV = DataTable.TN./(DataTable.TN+DataTable.FN);
+% functions to calculate sensitivity, specificity, PPV and NPV for all nights
+ACC.Sensitivity = @(x) x(1,1)/sum(x(1,:));
+ACC.Specificity = @(x) x(2,2)/sum(x(2,:));
+ACC.PPV = @(x) x(1,1)/sum(x(:,1));
+ACC.NPV = @(x) x(2,2)/sum(x(:,2));
 
 %seperate values by sensor (sensitivity_wake = specificity, PPV_wake = NPV)
 for i = 1:length(Sensors)
-    AC.Sensitivity_Sleep(:,i) = sensitivity(DataTable.Sensor == Sensors{i});
-    AC.PPV_Sleep(:,i) = PPV(DataTable.Sensor == Sensors{i});
-    AC.Sensitivity_Wake(:,i) = specificity(DataTable.Sensor == Sensors{i});
-    AC.PPV_Wake(:,i) = NPV(DataTable.Sensor == Sensors{i});
+    AC.Sensitivity_Sleep(:,i) = cellfun(ACC.Sensitivity, DataTable.ConfMatAll(DataTable.Sensor == Sensors{i}));
+    AC.PPV_Sleep(:,i) = cellfun(ACC.PPV, DataTable.ConfMatAll(DataTable.Sensor == Sensors{i}));
+    AC.Sensitivity_Wake(:,i) = cellfun(ACC.Specificity, DataTable.ConfMatAll(DataTable.Sensor == Sensors{i}));
+    AC.PPV_Wake(:,i) = cellfun(ACC.NPV, DataTable.ConfMatAll(DataTable.Sensor == Sensors{i}));
 end
 
 %get participants ID and groupby
@@ -73,7 +73,7 @@ for st = 1:numel(varplot)
     xvals = reshape([b.XEndPoints],2,3);
     yvals = reshape([b.YEndPoints],2,3)+reshape(SteMat',2,3);
 
-    % perform anova- Sensitivity
+    % perform anova- Sensitivity/Specificity
     [~,text_tbl,stats] = anova1(SEN,Sensors,'off');
     disp([varplot{st} ' Sensitivity'])
     text_tbl
@@ -96,7 +96,7 @@ for st = 1:numel(varplot)
         plot(ax.(varplot{st}),mean(xvals(1,[var1 var2])), max(yvals(1,:))+yval+.02, '*k');
     end
 
-    % perform anova
+    % perform anova - PPV/NPV
     [~,text_tbl,stats] = anova1(PPV,Sensors,'off');
     disp([varplot{st} ' PPV'])
     text_tbl
@@ -105,8 +105,6 @@ for st = 1:numel(varplot)
 
 
     %     % find significant tests
-    %     xvals = reshape([b.XEndPoints],2,3);
-    %     yvals = reshape([b.YEndPoints],2,3)+reshape(StdMat',2,3);
 
     sigTestInd = find(c(:,end)< .05);
     for i = 1:numel(sigTestInd)

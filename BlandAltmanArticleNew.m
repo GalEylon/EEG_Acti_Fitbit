@@ -1,5 +1,5 @@
 function [StatsTable]=BlandAltmanArticleNew(DataTable,var,sensorX, sensorY,varargin)
-%Draws a Bland-Altman and correlation plots.
+%Bland-Altman calculations and plots
 
 if ~isempty(varargin)
     SensorNames = varargin{1,1};
@@ -10,9 +10,6 @@ DataTable.("Start Time")(DataTable.("Start Time")<duration(12,0,0)) =...
     DataTable.("Start Time")(DataTable.("Start Time")<duration(12,0,0))+hours(24);
 
 %%
-% FC =minutes(DataTable{DataTable.Sensor == 'FB',"Start Time"})-minutes(DataTable{DataTable.Sensor == 'EEG',"Start Time"})
-% CK = minutes(DataTable{DataTable.Sensor == 'ACTI_CK',"Start Time"})-minutes(DataTable{DataTable.Sensor == 'EEG',"Start Time"})
-% S = minutes(DataTable{DataTable.Sensor == 'ACTI_S',"Start Time"})-minutes(DataTable{DataTable.Sensor == 'EEG',"Start Time"})
 
 StatsTable = table();
 % fig = figure('Units','normalized','OuterPosition',[0 0 1 1]);
@@ -39,14 +36,14 @@ for f = 1:numel(var) %TST and WASO/ sleep onset-offset
         difMean = mean(Ydif);
         difSTD = std(Ydif);
 
-
-        %% linear model
-        %check for proportional bias
-        lm = fitlm(Data1,Ydif);
-        slope = lm.Coefficients.Estimate(2);
-        intcpt = lm.Coefficients.Estimate(1);
         % check for heteroscedasticity
-        lmRes = fitlm(Data1,lm.Residuals.Raw); % check heteroscedasticity
+        lm = fitlm(Data1,Ydif);
+        lmRes = fitlm(Data1,lm.Residuals.Raw);
+        %if lmRes.Coefficients.pValue(2) < .05, the data are considered
+        %heteroscedastic and needs to be log-transformed 
+        % according to - "A standardized framework for testing the 
+        % performance of sleep-tracking technology: 
+        % step-by-step guidelines and open-source code" Menghini, 2021.
 
         % plot data (x axis - PSG, y axis - difference)
         nexttile;
@@ -54,8 +51,6 @@ for f = 1:numel(var) %TST and WASO/ sleep onset-offset
         %         xlabel('PSG'); ylabel('Device-PSG');
         set(gca,'FontName','Times New Roman', 'Tag', [var{f} num2str(i)],'FontSize',12);
         pbaspect([1 1 1]);
-
-
 
         %% Bland Altman parameters
         BAax = axis(gca);
